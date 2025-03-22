@@ -1,6 +1,12 @@
 [workspace]
-resolver = "2"
-members = ["programs/*", "rust-client"]
+members = [
+    "programs/klend",
+    "rust-client"
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
 
 [profile.release]
 overflow-checks = true
