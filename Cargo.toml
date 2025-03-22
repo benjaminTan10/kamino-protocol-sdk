@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["programs/*"]
+members = ["programs/*", "rust-client"]
 
 [profile.release]
 overflow-checks = true
