@@ -2165,6 +2165,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "rust-client"
+version = "0.1.0"
+
+[[package]]
 name = "rust_decimal"
 version = "1.34.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
