@@ -1,11 +1,11 @@
-mod borrow;
-mod deposit;
-mod init;
-mod liquidate;
-mod redeem;
-mod refresh;
-mod repay;
-mod withdraw;
+pub mod borrow;
+pub mod deposit;
+pub mod init;
+pub mod liquidate;
+pub mod redeem;
+pub mod refresh;
+pub mod repay;
+pub mod withdraw;
 
 pub use borrow::*;
 pub use deposit::*;

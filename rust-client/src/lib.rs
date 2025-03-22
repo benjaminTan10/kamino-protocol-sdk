@@ -1,47 +1,54 @@
+pub mod fee_estimation;
 pub mod instructions;
 pub mod rpc;
 pub mod utils;
 
 use anchor_client::solana_sdk::{
+    commitment_config::CommitmentConfig,
     pubkey::Pubkey,
-    signature::{Keypair, Signer},
-    transaction::Transaction,
+    signature::{Keypair, Signature},
+    signer::Signer,
 };
+use anchor_client::{Client as AnchorClient, Cluster, Program};
 use anyhow::Result;
-use rpc::RpcArgs;
-use solana_sdk::commitment_config::CommitmentConfig;
+use std::rc::Rc;
+
+pub use klend;
 
 pub struct KlendClient {
-    pub program_id: Pubkey,
-    pub rpc_args: RpcArgs,
-    pub payer: Keypair,
+    program: Program<Rc<Keypair>>,
+    payer: Rc<Keypair>,
 }
 
 impl KlendClient {
-    pub fn new(program_id: Pubkey, rpc_url: String, payer: Keypair) -> Self {
-        Self {
-            program_id,
-            rpc_args: RpcArgs {
-                rpc_url,
-                priority_fee: 0,
-                tx_action: rpc::TX_ACTION_SENT_TX,
-                keypair_path: None,
-            },
-            payer,
-        }
+    pub fn new(rpc_url: &str, payer: Keypair) -> Self {
+        let payer = Rc::new(payer);
+        let client = AnchorClient::new_with_options(
+            Cluster::Custom(rpc_url.to_string(), rpc_url.to_string()),
+            payer.clone(),
+            CommitmentConfig::confirmed(),
+        );
+        let program = client.program(klend::ID).unwrap();
+
+        Self { program, payer }
     }
 
-    pub fn with_priority_fee(mut self, priority_fee: u64) -> Self {
-        self.rpc_args.priority_fee = priority_fee;
-        self
+    pub fn program(&self) -> &Program<Rc<Keypair>> {
+        &self.program
     }
 
-    pub fn with_tx_action(mut self, tx_action: u8) -> Self {
-        self.rpc_args.tx_action = tx_action;
-        self
+    pub fn payer(&self) -> &Keypair {
+        &self.payer
     }
 
-    pub fn send_transaction(&self, transaction: Transaction, max_retries: u64) -> Result<solana_sdk::signature::Signature> {
-        Ok(self.rpc_args.send_transaction(&transaction, max_retries)?)
+    pub fn payer_pubkey(&self) -> Pubkey {
+        self.payer.pubkey()
+    }
+
+    pub fn send_and_confirm(&self, tx_name: &str, signature: Signature) -> Result<Signature> {
+        println!("Sending transaction: {}", tx_name);
+        let signature = self.program.rpc().confirm_transaction(&signature)?;
+        println!("Transaction confirmed: {}", signature);
+        Ok(signature)
     }
 } 

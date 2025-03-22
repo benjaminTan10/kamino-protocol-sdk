@@ -1,97 +1,84 @@
-use anchor_client::solana_sdk::{
-    instruction::Instruction,
-    pubkey::Pubkey,
-};
-use anchor_lang::{InstructionData, ToAccountMetas};
+use crate::KlendClient;
+use anchor_client::solana_sdk::{instruction::Instruction, pubkey::Pubkey, signature::Signature};
+use anchor_lang::prelude::*;
+use anyhow::Result;
+use klend::{self, MaxReservesAsCollateralCheck};
 
-pub fn refresh_reserve(
-    program_id: &Pubkey,
-    reserve: &Pubkey,
-    lending_market: &Pubkey,
-    pyth_oracle: Option<&Pubkey>,
-    switchboard_price_oracle: Option<&Pubkey>,
-    switchboard_twap_oracle: Option<&Pubkey>,
-    scope_prices: Option<&Pubkey>,
-) -> Instruction {
-    let mut accounts = klend::accounts::RefreshReserve {
-        reserve: *reserve,
-        lending_market: *lending_market,
-        pyth_oracle: None,
-        switchboard_price_oracle: None,
-        switchboard_twap_oracle: None,
-        scope_prices: None,
-    };
+impl KlendClient {
+    pub fn refresh_reserve(&self, reserve: &Pubkey) -> Result<Signature> {
+        let reserve_data = self.program().account::<klend::Reserve>(*reserve)?;
+        let lending_market = reserve_data.lending_market;
+        let token_info = reserve_data.config.token_info;
 
-    if let Some(oracle) = pyth_oracle {
-        accounts.pyth_oracle = Some(*oracle);
+        // Determine which price oracles to include based on token_info
+        let pyth_oracle = token_info.pyth_oracle;
+        let switchboard_price_oracle = token_info.switchboard_price_oracle;
+        let switchboard_twap_oracle = token_info.switchboard_twap_oracle;
+        let scope_prices = token_info.scope_price_id;
+
+        let mut accounts = klend::accounts::RefreshReserve {
+            reserve: *reserve,
+            lending_market,
+            pyth_oracle: None,
+            switchboard_price_oracle: None,
+            switchboard_twap_oracle: None,
+            scope_prices: None,
+        };
+
+        // Add the price oracles that are configured
+        if pyth_oracle != Pubkey::default() {
+            accounts.pyth_oracle = Some(pyth_oracle);
+        }
+        if switchboard_price_oracle != Pubkey::default() {
+            accounts.switchboard_price_oracle = Some(switchboard_price_oracle);
+        }
+        if switchboard_twap_oracle != Pubkey::default() {
+            accounts.switchboard_twap_oracle = Some(switchboard_twap_oracle);
+        }
+        if scope_prices != Pubkey::default() {
+            accounts.scope_prices = Some(scope_prices);
+        }
+
+        let signature = self
+            .program()
+            .request()
+            .accounts(accounts)
+            .args(klend::instruction::RefreshReserve {})
+            .send()?;
+
+        self.send_and_confirm("refresh_reserve", signature)
     }
 
-    if let Some(oracle) = switchboard_price_oracle {
-        accounts.switchboard_price_oracle = Some(*oracle);
-    }
+    pub fn refresh_obligation(
+        &self,
+        obligation: &Pubkey,
+        deposit_reserves: &[Pubkey],
+        borrow_reserves: &[Pubkey],
+    ) -> Result<Signature> {
+        let obligation_data = self.program().account::<klend::Obligation>(*obligation)?;
+        let lending_market = obligation_data.lending_market;
 
-    if let Some(oracle) = switchboard_twap_oracle {
-        accounts.switchboard_twap_oracle = Some(*oracle);
-    }
+        let accounts = klend::accounts::RefreshObligation {
+            obligation: *obligation,
+            lending_market,
+        };
 
-    if let Some(oracle) = scope_prices {
-        accounts.scope_prices = Some(*oracle);
-    }
+        // Combine deposit and borrow reserves for remaining accounts
+        let mut remaining_accounts = Vec::new();
+        for reserve in deposit_reserves.iter().chain(borrow_reserves.iter()) {
+            remaining_accounts.push(AccountMeta::new(*reserve, false));
+        }
 
-    Instruction {
-        program_id: *program_id,
-        accounts: accounts.to_account_metas(None),
-        data: klend::instruction::RefreshReserve {}.data(),
-    }
-}
+        let signature = self
+            .program()
+            .request()
+            .accounts(accounts)
+            .args(klend::instruction::RefreshObligation {
+                max_reserves_as_collateral_check: MaxReservesAsCollateralCheck::Perform,
+            })
+            .accounts(remaining_accounts)
+            .send()?;
 
-pub fn refresh_obligation(
-    program_id: &Pubkey,
-    obligation: &Pubkey,
-    lending_market: &Pubkey,
-    deposit_reserves: &[Pubkey],
-    borrow_reserves: &[Pubkey],
-    referrer_token_states: &[Pubkey],
-) -> Instruction {
-    let accounts = klend::accounts::RefreshObligation {
-        lending_market: *lending_market,
-        obligation: *obligation,
-    };
-
-    let mut remaining_accounts = Vec::new();
-    
-    // Add deposit reserves
-    for reserve in deposit_reserves {
-        remaining_accounts.push(anchor_lang::solana_program::instruction::AccountMeta {
-            pubkey: *reserve,
-            is_signer: false,
-            is_writable: false,
-        });
-    }
-    
-    // Add borrow reserves
-    for reserve in borrow_reserves {
-        remaining_accounts.push(anchor_lang::solana_program::instruction::AccountMeta {
-            pubkey: *reserve,
-            is_signer: false,
-            is_writable: false,
-        });
-    }
-    
-    // Add referrer token states if any
-    for state in referrer_token_states {
-        remaining_accounts.push(anchor_lang::solana_program::instruction::AccountMeta {
-            pubkey: *state,
-            is_signer: false,
-            is_writable: false,
-        });
-    }
-
-    Instruction {
-        program_id: *program_id,
-        accounts: accounts.to_account_metas(None),
-        data: klend::instruction::RefreshObligation {
-            max_reserves_as_collateral_check: klend::MaxReservesAsCollateralCheck::Perform,
-        }.data(),
+        self.send_and_confirm("refresh_obligation", signature)
     }
 } 
