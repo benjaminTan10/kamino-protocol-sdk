@@ -10,6 +10,9 @@ name = "klend-workspace"
 version = "0.1.0"
 edition = "2021"
 
+[lib]  # Added this section to specify a library target
+name = "klend_workspace"
+
 [profile.release.package.fixed]
 debug-assertions = true
 overflow-checks = true
@@ -51,4 +54,4 @@ opt-level = 1
 
 [package.metadata]
 cargo-build-sbf = { command = "cargo build-sbf -- -Znext-lockfile-bump" }
-anchor-build = { command = "anchor buildf" }
+anchor-build = { command = "anchor build" }  # Corrected the command from buildf to build
