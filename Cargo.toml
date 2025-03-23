@@ -9,14 +9,13 @@ members = [
 version = "0.1.0"
 edition = "2021"
 
-[profile.release]
-overflow-checks = true
-lto = 'thin'
-
-# Enable debug assert for the fixed crate in release mode
 [profile.release.package.fixed]
 debug-assertions = true
 overflow-checks = true
+
+[profile.release]
+overflow-checks = true
+lto = 'thin'
 
 [workspace.dependencies]
 # Anchor
