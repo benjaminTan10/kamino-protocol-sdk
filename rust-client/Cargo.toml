@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anchor-lang = "0.28.0"
-anchor-spl = "0.28.0"
-anchor-client = "0.28.0"
+anchor-lang = "0.29.0"
+anchor-spl = "0.29.0"
+anchor-client = "0.29.0"
 clap = { version = "3.2.25", features = ["derive", "env"] }
 solana-program = "=1.17.20"
 solana-rpc-client = "=1.17.20"
