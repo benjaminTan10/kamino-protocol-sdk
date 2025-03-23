@@ -1,0 +1,10 @@
+dist/
+docs/
+node_modules/
+*.md
+**/idl_codegen
+src/idl.json
+src/idl_codegen_kamino_vault
+src/idl_kamino_vault.json
+test-ledger/
+deps/
