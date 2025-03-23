@@ -10,8 +10,8 @@ name = "klend-workspace"
 version = "0.1.0"
 edition = "2021"
 
-[lib]  # Added this section to specify a library target
-name = "src/lib.rs"
+[lib]  # Library target specification
+path = "src/lib.rs"  # Corrected the path format
 
 [profile.release.package.fixed]
 debug-assertions = true
