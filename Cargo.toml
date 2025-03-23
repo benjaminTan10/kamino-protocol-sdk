@@ -48,9 +48,6 @@ rustflags = ["-C", "link-arg=-Tlinker.ld"]
 [profile.dev]
 opt-level = 1
 
-[profile.release]
-opt-level = 2
-
 [package.metadata]
 cargo-build-sbf = { command = "cargo build-sbf -- -Znext-lockfile-bump" }
 anchor-build = { command = "anchor buildf" }
