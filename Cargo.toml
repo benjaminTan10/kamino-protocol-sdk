@@ -10,8 +10,8 @@ name = "klend-workspace"
 version = "0.1.0"
 edition = "2021"
 
-[lib]  # Added this section to specify a library target
-name = "src/lib.rs"
+[lib]  # Library target specification
+path = "src/lib.rs"  # Corrected the path format
 
 [profile.release.package.fixed]
 debug-assertions = true
@@ -42,6 +42,7 @@ spl-associated-token-account = { version = "1.1.3", features = ["no-entrypoint"]
 # Allows to borsh serialize arrays of any length
 borsh = { version = "0.10.3", features = ["const-generics"] }
 bytemuck = { version = "1.4.0", features = ["min_const_generics", "derive"] }
+solana_rbpf = "=0.8.5"
 
 serde = { version = "1.0.136", features = ["derive"] }
 serde_json = "1.0.79"
